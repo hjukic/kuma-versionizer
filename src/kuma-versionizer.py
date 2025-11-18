@@ -270,7 +270,7 @@ def update_monitor_tags(
 ) -> bool:
     """Update monitor with version tag."""
     try:
-        version_tag_name = f'{tag_prefix}-{version}'
+        version_tag_name = tag_prefix or 'version'
         version_tag = tag_cache.get_or_create(version_tag_name)
 
         if not version_tag:
@@ -286,31 +286,36 @@ def update_monitor_tags(
         for tag in current_tags:
             tag_id = _extract_tag_id(tag)
             tag_name = tag.get('name') if isinstance(tag, dict) else tag_cache.get_name(tag_id)
+            tag_value = tag.get('value', '') if isinstance(tag, dict) else ''
+            is_version_tag = (tag_id == version_tag_id) or (tag_name == version_tag_name)
 
-            if tag_id == version_tag_id:
-                print(f"   ✓ Tag '{version_tag_name}' already exists on monitor")
-                tag_already_exists = True
-                updated_tags.append(tag)
-                continue
-
-            if tag_name.startswith(f'{tag_prefix}-'):
-                print(f"   Removing old tag '{tag_name}'...")
-                try:
-                    api.delete_monitor_tag(tag_id=tag_id, monitor_id=monitor['id'])
-                except Exception as exc:
-                    print(f"   ⚠ Warning: Could not remove old tag: {exc}")
+            if is_version_tag:
+                if tag_value == version:
+                    print(f"   ✓ Tag '{version_tag_name}' already has value '{version}'")
+                    tag_already_exists = True
+                    updated_tags.append(tag)
+                else:
+                    print(f"   Removing outdated '{version_tag_name}' tag (value: '{tag_value}')...")
+                    if tag_id is not None:
+                        try:
+                            api.delete_monitor_tag(tag_id=tag_id, monitor_id=monitor['id'])
+                        except Exception as exc:
+                            print(f"   ⚠ Warning: Could not remove old tag: {exc}")
                 continue
 
             updated_tags.append(tag)
 
         if not tag_already_exists:
-            print(f"   Adding tag '{version_tag_name}'...")
-            api.add_monitor_tag(tag_id=version_tag_id, monitor_id=monitor['id'], value='')
-            updated_tags.append({'id': version_tag_id, 'name': version_tag_name})
+            print(f"   Adding tag '{version_tag_name}' with value '{version}'...")
+            api.add_monitor_tag(tag_id=version_tag_id, monitor_id=monitor['id'], value=version)
+            updated_tags.append({'id': version_tag_id, 'name': version_tag_name, 'value': version})
 
         monitor['tags'] = updated_tags
 
-        print(f"✓ Successfully updated monitor '{monitor_name}' with tag '{version_tag_name}'")
+        print(
+            f"✓ Successfully updated monitor '{monitor_name}' with tag '{version_tag_name}' "
+            f"set to '{version}'"
+        )
         return True
 
     except Exception as exc:
