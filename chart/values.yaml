@@ -27,6 +27,11 @@ uptimeKuma:
 # SSL verification for version endpoints
 verifySSL: false
 
+# HTTP request behaviour for version endpoints
+request:
+  timeoutSeconds: 10
+  retries: 3
+
 # Service configurations (list of services to monitor)
 # Each service needs a monitorName, versionEndpoint, and optional tagPrefix
 services: []

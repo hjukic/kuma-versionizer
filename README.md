@@ -77,6 +77,10 @@ image:
 uptimeKuma:
   url: "http://uptime-kuma.uptime-kuma.svc.cluster.local:3001"
 
+request:
+  timeoutSeconds: 10
+  retries: 3
+
 services:
   - monitorName: "My Service"
     versionEndpoint: "http://myservice.namespace.svc.cluster.local/version.txt"
@@ -106,9 +110,24 @@ python -m venv .venv
 source .venv/bin/activate
 pip install requests uptime-kuma-api
 export SERVICES_CONFIG='[{"monitorName":"example","versionEndpoint":"http://example/version.txt"}]'
+# Alternatively, point to a JSON file:
+# export SERVICES_CONFIG_FILE=./services.json
+# Optional tuning:
+# export REQUEST_TIMEOUT=5
+# export REQUEST_RETRIES=2
 python src/kuma-versionizer.py
 ```
 Provide the required `UPTIME_KUMA_*` env vars (see the script header) plus a `SERVICES_CONFIG` JSON payload when running locally.
+
+## Configuration reference
+- `UPTIME_KUMA_URL` (default: `http://uptime-kuma.uptime-kuma.svc.cluster.local:3001`)
+- `UPTIME_KUMA_USERNAME` (required)
+- `UPTIME_KUMA_PASSWORD` (required)
+- `VERIFY_SSL` (`true`/`false`, controls TLS verification for version endpoints)
+- `SERVICES_CONFIG` JSON array describing services
+- `SERVICES_CONFIG_FILE` path to a JSON file containing the same payload (takes precedence over `SERVICES_CONFIG`)
+- `REQUEST_TIMEOUT` seconds to wait for each version endpoint (default: `10`)
+- `REQUEST_RETRIES` retry attempts for transient HTTP failures (default: `3`)
 
 ## Roadmap
 - Optional ConfigMap support for service definitions that exceed env-var limits

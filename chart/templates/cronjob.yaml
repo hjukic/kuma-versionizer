@@ -49,6 +49,10 @@ spec:
               value: {{ .Values.services | toJson | quote }}
             - name: VERIFY_SSL
               value: {{ .Values.verifySSL | quote }}
+            - name: REQUEST_TIMEOUT
+              value: {{ .Values.request.timeoutSeconds | quote }}
+            - name: REQUEST_RETRIES
+              value: {{ .Values.request.retries | quote }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

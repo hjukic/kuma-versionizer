@@ -2,4 +2,4 @@ apiVersion: v2
 name: kuma-versionizer
 description: CronJob to sync application version to Uptime Kuma tags
 type: application
-version: 1.1.1
+version: 1.2.0
