@@ -13,7 +13,7 @@ Automatically fetches each service’s reported version, turns it into a tag, an
 .
 ├── Dockerfile          # Prebuilt image for the cron job
 ├── src/
-│   └── update-uptime-kuma-version.py
+│   └── kuma-versionizer.py
 └── chart/
     ├── Chart.yaml
     ├── values.yaml
@@ -55,7 +55,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install requests uptime-kuma-api
 export SERVICES_CONFIG='[{"monitorName":"example","versionEndpoint":"http://example/version.txt"}]'
-python src/update-uptime-kuma-version.py
+python src/kuma-versionizer.py
 ```
 Provide the required `UPTIME_KUMA_*` env vars (see the script header) plus a `SERVICES_CONFIG` JSON payload when running locally.
 

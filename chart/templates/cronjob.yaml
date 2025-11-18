@@ -31,7 +31,7 @@ spec:
           - name: kuma-versionizer
             image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
             imagePullPolicy: {{ .Values.image.pullPolicy }}
-            command: [python, /app/update-uptime-kuma-version.py]
+            command: [python, /app/kuma-versionizer.py]
             env:
             - name: UPTIME_KUMA_URL
               value: {{ .Values.uptimeKuma.url | quote }}

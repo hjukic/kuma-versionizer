@@ -5,10 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY src/update-uptime-kuma-version.py /app/
+COPY src/kuma-versionizer.py /app/
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir requests uptime-kuma-api
 
-CMD ["python", "/app/update-uptime-kuma-version.py"]
+CMD ["python", "/app/kuma-versionizer.py"]
 

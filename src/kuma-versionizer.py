@@ -119,13 +119,21 @@ def update_monitor_tags(
         # Find and remove old version tags
         current_tags = monitor.get('tags', [])
         updated_tags = []
+        tag_already_exists = False
 
         for tag in current_tags:
             tag_id = _extract_tag_id(tag)
             tag_name = tag.get('name') if isinstance(tag, dict) else tag_cache.get_name(tag_id)
             
-            # Remove old version tags (but not the one we're adding)
-            if tag_name.startswith(f'{tag_prefix}-') and tag_id != version_tag_id:
+            # Check if the target version tag already exists
+            if tag_id == version_tag_id:
+                print(f"   ✓ Tag '{version_tag_name}' already exists on monitor")
+                tag_already_exists = True
+                updated_tags.append(tag)
+                continue
+            
+            # Remove old version tags
+            if tag_name.startswith(f'{tag_prefix}-'):
                 print(f"   Removing old tag '{tag_name}'...")
                 try:
                     api.delete_monitor_tag(tag_id=tag_id, monitor_id=monitor['id'])
@@ -135,12 +143,13 @@ def update_monitor_tags(
 
             updated_tags.append(tag)
 
-        # Add the new version tag
-        print(f"   Adding tag '{version_tag_name}'...")
-        api.add_monitor_tag(tag_id=version_tag_id, monitor_id=monitor['id'], value='')
-
-        # Track the new state locally so repeated runs avoid stale data
-        updated_tags.append({'id': version_tag_id, 'name': version_tag_name})
+        # Add the new version tag only if it doesn't already exist
+        if not tag_already_exists:
+            print(f"   Adding tag '{version_tag_name}'...")
+            api.add_monitor_tag(tag_id=version_tag_id, monitor_id=monitor['id'], value='')
+            # Track the new state locally so repeated runs avoid stale data
+            updated_tags.append({'id': version_tag_id, 'name': version_tag_name})
+        
         monitor['tags'] = updated_tags
 
         print(f"✓ Successfully updated monitor '{monitor_name}' with tag '{version_tag_name}'")
