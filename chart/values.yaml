@@ -5,4 +5,4 @@ nameOverride:
 fullnameOverride: 
 
 # CronJob schedule (cron format)
-schedule: */5
+schedule: "*/10 * * * *"
