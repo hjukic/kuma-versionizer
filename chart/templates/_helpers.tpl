@@ -1,8 +1,8 @@
-{{- define version-sync.name -}}
+{{- define kuma-versionizer.name -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix - -}}
 {{- end -}}
 
-{{- define version-sync.fullname -}}
+{{- define kuma-versionizer.fullname -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix - -}}
 {{- else -}}
@@ -15,8 +15,8 @@
 {{- end -}}
 {{- end -}}
 
-{{- define version-sync.labels -}}
-app.kubernetes.io/name: {{ include version-sync.name . }}
+{{- define kuma-versionizer.labels -}}
+app.kubernetes.io/name: {{ include kuma-versionizer.name . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace + _ }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
