@@ -4,5 +4,60 @@
 nameOverride: 
 fullnameOverride: 
 
+# Docker image configuration
+image:
+  repository: ghcr.io/hjukic/kuma-versionizer
+  tag: latest
+  pullPolicy: Always
+  imagePullSecrets: []
+
 # CronJob schedule (cron format)
 schedule: "*/10 * * * *"
+
+# Uptime Kuma connection settings
+uptimeKuma:
+  url: "http://uptime-kuma.uptime-kuma.svc.cluster.local:3001"
+  usernameSecret:
+    name: uptime-kuma-credentials
+    key: username
+  passwordSecret:
+    name: uptime-kuma-credentials
+    key: password
+
+# SSL verification for version endpoints
+verifySSL: false
+
+# Service configurations (list of services to monitor)
+# Each service needs a monitorName, versionEndpoint, and optional tagPrefix
+services: []
+  # Example:
+  # - monitorName: "My Service"
+  #   versionEndpoint: "https://myservice.example.com/version.txt"
+  #   tagPrefix: "version"
+
+# Additional environment variables
+extraEnv: []
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Resource limits and requests
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 50m
+  #   memory: 64Mi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

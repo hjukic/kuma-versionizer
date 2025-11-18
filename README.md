@@ -21,6 +21,26 @@ Automatically fetches each service’s reported version, turns it into a tag, an
 ```
 
 ## Build and publish the container image
+
+### Automated via GitHub Actions (Recommended)
+The repository includes a GitHub Actions workflow that automatically builds and pushes the Docker image to GitHub Container Registry (GHCR) when you:
+- Push to the `main` branch (creates `latest` tag)
+- Create a version tag (e.g., `v1.0.0`)
+
+**Setup:**
+1. Enable GitHub Actions in your repository
+2. Ensure GitHub Packages are enabled
+3. Push to `main` or create a tag: `git tag v1.0.0 && git push --tags`
+4. The image will be available at `ghcr.io/<your-username>/kuma-versionizer:latest`
+
+Update `chart/values.yaml` with your GitHub username:
+```yaml
+image:
+  repository: ghcr.io/<your-username>/kuma-versionizer
+  tag: latest
+```
+
+### Manual build (Alternative)
 ```bash
 # From the repo root
 IMAGE=ghcr.io/<org>/kuma-versionizer:latest
@@ -28,16 +48,47 @@ IMAGE=ghcr.io/<org>/kuma-versionizer:latest
 docker build -t "$IMAGE" -f Dockerfile .
 docker push "$IMAGE"
 ```
-Update `chart/values.yaml` (or your own override file) with the image reference you just pushed.
 
 ## Helm quick start
+
+### 1. Create the Uptime Kuma credentials secret
+```bash
+kubectl create secret generic uptime-kuma-credentials \
+  --from-literal=username=<your-username> \
+  --from-literal=password=<your-password> \
+  --namespace version-sync
+```
+
+### 2. Install the Helm chart
 ```bash
 helm upgrade --install kuma-versionizer ./chart \
   --namespace version-sync --create-namespace \
-  --set image.repository=ghcr.io/<org>/kuma-versionizer \
-  --set image.tag=latest
+  --set image.repository=ghcr.io/<your-username>/kuma-versionizer \
+  --set image.tag=latest \
+  --set uptimeKuma.url=http://uptime-kuma.uptime-kuma.svc.cluster.local:3001
 ```
-You also need an `uptime-kuma-credentials` secret in the same namespace that holds the username/password used by the job.
+
+Or create a `values-override.yaml`:
+```yaml
+image:
+  repository: ghcr.io/<your-username>/kuma-versionizer
+  tag: latest
+
+uptimeKuma:
+  url: "http://uptime-kuma.uptime-kuma.svc.cluster.local:3001"
+
+services:
+  - monitorName: "My Service"
+    versionEndpoint: "http://myservice.namespace.svc.cluster.local/version.txt"
+    tagPrefix: "version"
+```
+
+Then install:
+```bash
+helm upgrade --install kuma-versionizer ./chart \
+  --namespace version-sync --create-namespace \
+  -f values-override.yaml
+```
 
 ### Configure services
 In `values.yaml`, add entries under `services`:
@@ -60,9 +111,9 @@ python src/kuma-versionizer.py
 Provide the required `UPTIME_KUMA_*` env vars (see the script header) plus a `SERVICES_CONFIG` JSON payload when running locally.
 
 ## Roadmap
-- GitHub Actions workflow to lint, build, and publish the image
 - Optional ConfigMap support for service definitions that exceed env-var limits
 - Support for token-based Uptime Kuma auth
+- Multi-architecture support (amd64, arm64)
 
 Contributions and feedback are welcome!
 
