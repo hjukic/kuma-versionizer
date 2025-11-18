@@ -297,8 +297,13 @@ def update_monitor_tags(
                 else:
                     print(f"   Removing outdated '{version_tag_name}' tag (value: '{tag_value}')...")
                     if tag_id is not None:
+                        delete_kwargs = {
+                            'tag_id': tag_id,
+                            'monitor_id': monitor['id'],
+                            'value': tag_value or '',
+                        }
                         try:
-                            api.delete_monitor_tag(tag_id=tag_id, monitor_id=monitor['id'])
+                            api.delete_monitor_tag(**delete_kwargs)
                         except Exception as exc:
                             print(f"   ⚠ Warning: Could not remove old tag: {exc}")
                 continue
