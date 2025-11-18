@@ -1,9 +1,9 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include kuma-versionizer.fullname . }}
+  name: {{ include "kuma-versionizer.fullname" . }}
   labels:
-    {{- include kuma-versionizer.labels . | nindent 4 }}
+    {{- include "kuma-versionizer.labels" . | nindent 4 }}
 spec:
   schedule: {{ .Values.schedule | quote }}
   concurrencyPolicy: Forbid
@@ -14,7 +14,7 @@ spec:
       template:
         metadata:
           labels:
-            {{- include kuma-versionizer.labels . | nindent 12 }}
+            {{- include "kuma-versionizer.labels" . | nindent 12 }}
             {{- with .Values.podLabels }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
