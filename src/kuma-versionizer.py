@@ -32,13 +32,13 @@ class ServiceConfig:
 
     monitor_name: str
     version_endpoint: str
-    tag_prefix: str = 'version'
+    tag_prefix: str = 'Version'
 
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> 'ServiceConfig':
         monitor_name = str(payload.get('monitorName', '')).strip()
         version_endpoint = str(payload.get('versionEndpoint', '')).strip()
-        tag_prefix = str(payload.get('tagPrefix', 'version')).strip() or 'version'
+        tag_prefix = str(payload.get('tagPrefix', 'Version')).strip() or 'Version'
 
         if not monitor_name or not version_endpoint:
             raise ValueError('monitorName and versionEndpoint are required')
@@ -266,11 +266,11 @@ def update_monitor_tags(
     monitor_name: str,
     version: str,
     tag_cache: TagCache,
-    tag_prefix: str = 'version',
+    tag_prefix: str = 'Version',
 ) -> bool:
     """Update monitor with version tag."""
     try:
-        version_tag_name = tag_prefix or 'version'
+        version_tag_name = tag_prefix or 'Version'
         version_tag = tag_cache.get_or_create(version_tag_name)
 
         if not version_tag:
