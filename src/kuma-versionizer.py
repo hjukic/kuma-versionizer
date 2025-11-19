@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import traceback
 from dataclasses import dataclass
@@ -24,6 +25,21 @@ from uptime_kuma_api import UptimeKumaApi
 from urllib3.util.retry import Retry
 
 DEFAULT_UPTIME_KUMA_URL = 'http://uptime-kuma.uptime-kuma.svc.cluster.local:3001'
+MAX_VERSION_LENGTH = 64
+
+SEMVER_PATTERN = re.compile(
+    r'^[vV]?'
+    r'(?:0|[1-9]\d*)\.'
+    r'(?:0|[1-9]\d*)\.'
+    r'(?:0|[1-9]\d*)'
+    r'(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?'
+    r'(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$',
+    re.ASCII,
+)
+RELAXED_VERSION_PATTERN = re.compile(
+    r'^[vV]?\d+(?:\.\d+){0,3}(?:[-+][0-9A-Za-z.-]+)?$',
+    re.ASCII,
+)
 
 
 @dataclass(frozen=True)
@@ -189,6 +205,35 @@ def build_session(settings: Settings) -> requests.Session:
     return session
 
 
+def validate_version_payload(version: str, source: str) -> Optional[str]:
+    """Ensure the payload looks like a version number."""
+    if len(version) > MAX_VERSION_LENGTH:
+        print(
+            f"✗ Error: Version endpoint {source} returned a payload longer than {MAX_VERSION_LENGTH} "
+            f"characters. Did not process the version number properly.",
+            file=sys.stderr,
+        )
+        return None
+
+    if SEMVER_PATTERN.match(version):
+        return version
+
+    if RELAXED_VERSION_PATTERN.match(version):
+        print(
+            f"⚠ Warning: Version endpoint {source} returned '{version}', which is not fully semantic "
+            f"but looks like a version number. Continuing.",
+            file=sys.stderr,
+        )
+        return version
+
+    print(
+        f"✗ Error: Version endpoint {source} returned '{version}', which does not look like a version "
+        "number. Did not process the version number properly.",
+        file=sys.stderr,
+    )
+    return None
+
+
 def get_version(version_endpoint: str, session: requests.Session, timeout: float) -> Optional[str]:
     """Fetch the version string from the configured endpoint."""
     try:
@@ -200,7 +245,7 @@ def get_version(version_endpoint: str, session: requests.Session, timeout: float
             print(f"✗ Error: Version endpoint {version_endpoint} returned an empty body", file=sys.stderr)
             return None
 
-        return version
+        return validate_version_payload(version, version_endpoint)
     except requests.exceptions.RequestException as exc:
         print(f"✗ Error fetching version from {version_endpoint}: {exc}", file=sys.stderr)
         return None
