@@ -42,6 +42,40 @@ RELAXED_VERSION_PATTERN = re.compile(
 )
 
 
+def _extract_version_from_json(payload: Any) -> Optional[str]:
+    """Recursively search for a version string inside JSON payloads."""
+    candidate_keys = ('version', 'Version', 'appVersion', 'app_version', 'gitVersion')
+
+    if isinstance(payload, dict):
+        for key in candidate_keys:
+            if key not in payload:
+                continue
+            value = payload[key]
+            if value is None:
+                continue
+            value_str = str(value).strip()
+            if value_str:
+                return value_str
+
+        for value in payload.values():
+            nested = _extract_version_from_json(value)
+            if nested:
+                return nested
+
+    elif isinstance(payload, list):
+        for item in payload:
+            nested = _extract_version_from_json(item)
+            if nested:
+                return nested
+
+    elif isinstance(payload, (str, int, float)):
+        candidate = str(payload).strip()
+        if candidate:
+            return candidate
+
+    return None
+
+
 @dataclass(frozen=True)
 class ServiceConfig:
     """Single service definition provided via SERVICES_CONFIG."""
@@ -239,11 +273,37 @@ def get_version(version_endpoint: str, session: requests.Session, timeout: float
     try:
         response = session.get(version_endpoint, timeout=timeout)
         response.raise_for_status()
-        version = response.text.strip()
+        body = response.text.strip()
 
-        if not version:
+        if not body:
             print(f"✗ Error: Version endpoint {version_endpoint} returned an empty body", file=sys.stderr)
             return None
+
+        content_type = response.headers.get('Content-Type', '')
+        looks_like_json = (
+            'application/json' in content_type.lower()
+            or body.startswith('{')
+            or body.startswith('[')
+        )
+
+        version_candidate: Optional[str] = None
+        if looks_like_json:
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = None
+            else:
+                version_candidate = _extract_version_from_json(payload)
+                if version_candidate:
+                    version_candidate = version_candidate.strip()
+                else:
+                    print(
+                        f"⚠ Warning: Version endpoint {version_endpoint} returned JSON but no obvious version "
+                        "field was found. Falling back to raw response body.",
+                        file=sys.stderr,
+                    )
+
+        version = version_candidate or body
 
         return validate_version_payload(version, version_endpoint)
     except requests.exceptions.RequestException as exc:
