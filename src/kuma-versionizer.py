@@ -83,17 +83,26 @@ class ServiceConfig:
     monitor_name: str
     version_endpoint: str
     tag_prefix: str = 'Version'
+    version_header: Optional[str] = None
 
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> 'ServiceConfig':
         monitor_name = str(payload.get('monitorName', '')).strip()
         version_endpoint = str(payload.get('versionEndpoint', '')).strip()
         tag_prefix = str(payload.get('tagPrefix', 'Version')).strip() or 'Version'
+        version_header = payload.get('versionHeader')
+        if version_header:
+            version_header = str(version_header).strip() or None
 
         if not monitor_name or not version_endpoint:
             raise ValueError('monitorName and versionEndpoint are required')
 
-        return cls(monitor_name=monitor_name, version_endpoint=version_endpoint, tag_prefix=tag_prefix)
+        return cls(
+            monitor_name=monitor_name,
+            version_endpoint=version_endpoint,
+            tag_prefix=tag_prefix,
+            version_header=version_header,
+        )
 
 
 @dataclass(frozen=True)
@@ -268,11 +277,26 @@ def validate_version_payload(version: str, source: str) -> Optional[str]:
     return None
 
 
-def get_version(version_endpoint: str, session: requests.Session, timeout: float) -> Optional[str]:
-    """Fetch the version string from the configured endpoint."""
+def get_version(
+    version_endpoint: str, session: requests.Session, timeout: float, version_header: Optional[str] = None
+) -> Optional[str]:
+    """Fetch the version string from the configured endpoint or HTTP header."""
     try:
         response = session.get(version_endpoint, timeout=timeout)
         response.raise_for_status()
+
+        # If a version header is specified, try to read from there first
+        if version_header:
+            header_value = response.headers.get(version_header, '').strip()
+            if header_value:
+                print(f"   ✓ Found version in header '{version_header}': {header_value}")
+                return validate_version_payload(header_value, version_endpoint)
+            else:
+                print(
+                    f"⚠ Warning: Header '{version_header}' not found or empty. Falling back to response body.",
+                    file=sys.stderr,
+                )
+
         body = response.text.strip()
 
         if not body:
@@ -445,7 +469,7 @@ def process_service(
     """Process a single service configuration."""
     print(f"\n📦 Processing service: {service.monitor_name}")
 
-    version = get_version(service.version_endpoint, session, request_timeout)
+    version = get_version(service.version_endpoint, session, request_timeout, service.version_header)
     if not version:
         return False
     print(f"   ✓ Fetched version: {version}")
