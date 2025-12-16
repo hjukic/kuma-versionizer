@@ -11,6 +11,9 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
+      {{- if .Values.activeDeadlineSeconds }}
+      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+      {{- end }}
       template:
         metadata:
           labels:
@@ -23,6 +26,9 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         spec:
+          {{- if .Values.terminationGracePeriodSeconds }}
+          terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+          {{- end }}
           {{- with .Values.image.imagePullSecrets }}
           imagePullSecrets:
             {{- toYaml . | nindent 12 }}

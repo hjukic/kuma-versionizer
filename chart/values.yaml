@@ -58,6 +58,15 @@ resources: {}
   #   cpu: 50m
   #   memory: 64Mi
 
+# Job timeout - maximum time the job is allowed to run (in seconds)
+# Default: 300 seconds (5 minutes)
+activeDeadlineSeconds: 300
+
+# Pod termination grace period (in seconds)
+# How long to wait for graceful shutdown before killing the pod
+# Default: 30 seconds
+terminationGracePeriodSeconds: 30
+
 # Node selector
 nodeSelector: {}
 

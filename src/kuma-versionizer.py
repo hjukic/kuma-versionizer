@@ -505,19 +505,28 @@ class VersionSyncer:
             print("\n✓ All version tags updated successfully")
             return True
         finally:
-            session.close()
+            # Ensure all connections are properly closed
+            print("Cleaning up connections...")
             try:
-                api.disconnect()
-                print("Disconnected from Uptime Kuma")
-            except Exception:
-                pass
+                session.close()
+            except Exception as exc:
+                print(f"⚠ Warning: Error closing session: {exc}", file=sys.stderr)
+            
+            try:
+                if api:
+                    api.disconnect()
+                    print("✓ Disconnected from Uptime Kuma")
+            except Exception as exc:
+                print(f"⚠ Warning: Error disconnecting from Uptime Kuma: {exc}", file=sys.stderr)
 
 
 def main():
     settings = load_settings()
     syncer = VersionSyncer(settings)
     success = syncer.run()
-    sys.exit(0 if success else 1)
+    exit_code = 0 if success else 1
+    print(f"\n{'✓' if success else '✗'} Exiting with code {exit_code}")
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':
