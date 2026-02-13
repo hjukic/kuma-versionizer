@@ -283,9 +283,10 @@ def get_version(
     """Fetch the version string from the configured endpoint or HTTP header."""
     try:
         response = session.get(version_endpoint, timeout=timeout)
-        response.raise_for_status()
 
-        # If a version header is specified, try to read from there first
+        # If a version header is specified, try to read from there first — before
+        # raise_for_status(), because some servers (e.g. Jenkins) return useful
+        # headers even on non-2xx responses such as 403.
         if version_header:
             header_value = response.headers.get(version_header, '').strip()
             if header_value:
@@ -296,6 +297,8 @@ def get_version(
                     f"⚠ Warning: Header '{version_header}' not found or empty. Falling back to response body.",
                     file=sys.stderr,
                 )
+
+        response.raise_for_status()
 
         body = response.text.strip()
 
