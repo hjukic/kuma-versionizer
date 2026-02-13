@@ -553,7 +553,7 @@ def main():
     success = syncer.run()
     exit_code = 0 if success else 1
     print(f"\n{'✓' if success else '✗'} Exiting with code {exit_code}")
-    sys.exit(exit_code)
+    os._exit(exit_code)
 
 
 if __name__ == '__main__':
