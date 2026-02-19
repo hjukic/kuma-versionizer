@@ -41,6 +41,20 @@ RELAXED_VERSION_PATTERN = re.compile(
     re.ASCII,
 )
 
+SEMVER_EXTRACT_PATTERN = re.compile(
+    r'[vV]?'
+    r'(?:0|[1-9]\d*)\.'
+    r'(?:0|[1-9]\d*)\.'
+    r'(?:0|[1-9]\d*)'
+    r'(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?'
+    r'(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?',
+    re.ASCII,
+)
+RELAXED_EXTRACT_PATTERN = re.compile(
+    r'[vV]?\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?',
+    re.ASCII,
+)
+
 
 def _extract_version_from_json(payload: Any) -> Optional[str]:
     """Recursively search for a version string inside JSON payloads."""
@@ -268,6 +282,26 @@ def validate_version_payload(version: str, source: str) -> Optional[str]:
             file=sys.stderr,
         )
         return version
+
+    match = SEMVER_EXTRACT_PATTERN.search(version)
+    if match:
+        extracted = match.group(0)
+        print(
+            f"⚠ Warning: Version endpoint {source} returned '{version}'. "
+            f"Extracted version '{extracted}' from surrounding text.",
+            file=sys.stderr,
+        )
+        return extracted
+
+    match = RELAXED_EXTRACT_PATTERN.search(version)
+    if match:
+        extracted = match.group(0)
+        print(
+            f"⚠ Warning: Version endpoint {source} returned '{version}'. "
+            f"Extracted version '{extracted}' from surrounding text (relaxed match).",
+            file=sys.stderr,
+        )
+        return extracted
 
     print(
         f"✗ Error: Version endpoint {source} returned '{version}', which does not look like a version "
