@@ -11,6 +11,7 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
+      backoffLimit: 0
       {{- if .Values.activeDeadlineSeconds }}
       activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
       {{- end }}
@@ -76,4 +77,4 @@ spec:
           affinity:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          restartPolicy: OnFailure
+          restartPolicy: Never
