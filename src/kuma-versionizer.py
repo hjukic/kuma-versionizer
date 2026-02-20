@@ -15,6 +15,7 @@ import json
 import os
 import re
 import sys
+import threading
 import traceback
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -532,6 +533,21 @@ class VersionSyncer:
     def __init__(self, settings: Settings):
         self.settings = settings
 
+    @staticmethod
+    def _disconnect_with_timeout(api: UptimeKumaApi, timeout: float = 5.0) -> None:
+        """Disconnect from Uptime Kuma with a timeout to prevent hanging."""
+        thread = threading.Thread(target=api.disconnect, daemon=True)
+        thread.start()
+        thread.join(timeout=timeout)
+        if thread.is_alive():
+            print(
+                f"⚠ Warning: Uptime Kuma disconnect did not complete within {timeout}s, "
+                "continuing with exit.",
+                file=sys.stderr,
+            )
+        else:
+            print("✓ Disconnected from Uptime Kuma")
+
     def run(self) -> bool:
         print(f"\n🚀 Starting version sync for {len(self.settings.services)} service(s)")
         print(f"   Uptime Kuma URL: {self.settings.uptime_kuma_url}\n")
@@ -566,28 +582,31 @@ class VersionSyncer:
             print("\n✓ All version tags updated successfully")
             return True
         finally:
-            # Ensure all connections are properly closed
             print("Cleaning up connections...")
             try:
                 session.close()
             except Exception as exc:
                 print(f"⚠ Warning: Error closing session: {exc}", file=sys.stderr)
-            
-            try:
-                if api:
-                    api.disconnect()
-                    print("✓ Disconnected from Uptime Kuma")
-            except Exception as exc:
-                print(f"⚠ Warning: Error disconnecting from Uptime Kuma: {exc}", file=sys.stderr)
+
+            if api:
+                self._disconnect_with_timeout(api)
 
 
 def main():
-    settings = load_settings()
-    syncer = VersionSyncer(settings)
-    success = syncer.run()
-    exit_code = 0 if success else 1
-    print(f"\n{'✓' if success else '✗'} Exiting with code {exit_code}")
-    os._exit(exit_code)
+    exit_code = 1
+    try:
+        settings = load_settings()
+        syncer = VersionSyncer(settings)
+        success = syncer.run()
+        exit_code = 0 if success else 1
+    except SystemExit as exc:
+        exit_code = exc.code if isinstance(exc.code, int) else 1
+    except Exception:
+        traceback.print_exc()
+        exit_code = 1
+    finally:
+        print(f"\n{'✓' if exit_code == 0 else '✗'} Exiting with code {exit_code}")
+        os._exit(exit_code)
 
 
 if __name__ == '__main__':
